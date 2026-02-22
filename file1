@@ -1,0 +1,82 @@
+# Import libraries
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, accuracy_score
+import matplotlib.pyplot as plt
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# ----------------------------
+# Generate Synthetic Dataset
+# ----------------------------
+
+n_samples = 1000
+
+temperature = np.random.normal(loc=35, scale=5, size=n_samples)  # °C
+humidity = np.random.normal(loc=40, scale=10, size=n_samples)    # %
+wind_speed = np.random.normal(loc=20, scale=5, size=n_samples)   # km/h
+rainfall = np.random.normal(loc=5, scale=3, size=n_samples)      # mm
+vegetation_index = np.random.uniform(0.2, 0.9, n_samples)        # NDVI-like
+
+# Create wildfire risk label (0 = Low, 1 = High)
+risk = (
+    (temperature > 37) &
+    (humidity < 35) &
+    (wind_speed > 22) &
+    (rainfall < 4) &
+    (vegetation_index > 0.5)
+).astype(int)
+
+# Create DataFrame
+data = pd.DataFrame({
+    "Temperature": temperature,
+    "Humidity": humidity,
+    "Wind_Speed": wind_speed,
+    "Rainfall": rainfall,
+    "Vegetation_Index": vegetation_index,
+    "Wildfire_Risk": risk
+})
+
+# ----------------------------
+# Train/Test Split
+# ----------------------------
+
+X = data.drop("Wildfire_Risk", axis=1)
+y = data["Wildfire_Risk"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# ----------------------------
+# Train Model
+# ----------------------------
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# ----------------------------
+# Predictions
+# ----------------------------
+
+y_pred = model.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# ----------------------------
+# Feature Importance Plot
+# ----------------------------
+
+importances = model.feature_importances_
+features = X.columns
+
+plt.figure()
+plt.bar(features, importances)
+plt.xticks(rotation=45)
+plt.title("Feature Importance for Wildfire Risk Prediction")
+plt.tight_layout()
+plt.show()
